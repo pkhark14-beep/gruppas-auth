@@ -17,39 +17,30 @@ app.get('/api/yggdrasil', (req, res) => {
     });
 });
 
-// Отдача текстуры скина клиенту игры по нику/UUID
+// Отдача скина
 app.get('/api/yggdrasil/sessionserver/session/minecraft/profile/:uuid', (req, res) => {
     const uuid = req.params.uuid;
     const username = req.query.name || "Player";
-
     const skinUrl = `http://accountgruppas.gt.tc/skins/${username}.png`;
 
     const textureData = {
         timestamp: Date.now(),
         profileId: uuid,
         profileName: username,
-        textures: {
-            SKIN: {
-                url: skinUrl
-            }
-        }
+        textures: { SKIN: { url: skinUrl } }
     };
-
-    const base64Textures = Buffer.from(JSON.stringify(textureData)).toString('base64');
 
     res.json({
         id: uuid,
         name: username,
-        properties: [
-            {
-                name: "textures",
-                value: base64Textures
-            }
-        ]
+        properties: [{
+            name: "textures",
+            value: Buffer.from(JSON.stringify(textureData)).toString('base64')
+        }]
     });
 });
 
-// Настоящая проверка логина и пароля
+// СТРОГАЯ ПРОВЕРКА ПАРОЛЯ ЧЕРЕЗ БАЗУ
 app.post('/auth', async (req, res) => {
     const { username, password } = req.body;
 
@@ -58,7 +49,6 @@ app.post('/auth', async (req, res) => {
     }
 
     try {
-        // Запрос к auth.php со стороны Render (серверные запросы не блокируются браузерным фильтром)
         const params = new URLSearchParams();
         params.append('username', username);
         params.append('password', password);
@@ -75,8 +65,7 @@ app.post('/auth', async (req, res) => {
         const data = await response.json();
         return res.json(data);
     } catch (err) {
-        // Если база сайта вернула ошибку парсинга или недоступна
-        console.error("Auth proxy error:", err);
+        console.error("Auth error:", err);
         return res.status(401).json({ status: "error", message: "Неверный логин или пароль" });
     }
 });
